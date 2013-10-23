@@ -152,6 +152,8 @@
     <OutDir>$(SolutionDir)\lib\x64</OutDir>
     <IntDir>obj\release_static\</IntDir>
     <TargetName>visipedia</TargetName>
+    <IncludePath>C:\opencv\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\opencv\build\x64\vc10\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
