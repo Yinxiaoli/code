@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>INSERT_TITLE_HERE</title>
+<style>
+</style>
+<script src="http://d3js.org/d3.v2.min.js?2.8.1"></script>
+
+<body>
+<h1>INSERT_TITLE_HERE</h1>
+
+<script type="text/javascript">
+<!-- Data for bar chart: Two time-series, alternating to form a single series. Bar Color will switch back & forth -->
+var data = [23, 85, 67, 38, 70, 30, 80, 18 ];
+var colorlist = ["maroon", "darkblue"];
+var labellist = ["Reagan (1982/84/87)", "", "Bush I (1990)", "", "Clinton (1993/1997)", "", "Obama (proposed, 2011)", ""];
+
+var w = 815,
+    h = 260,
+    labelpad = 165,
+    x = d3.scale.linear().domain([0, 100]).range([0, w]),
+    y = d3.scale.ordinal().domain(d3.range(data.length)).rangeBands([0, h], .2);
+
+var vis = d3.select("#paired-bar-chart")
+  .append("svg:svg")
+    .attr("width", w + 40)
+    .attr("height", h + 20)
+  .append("svg:g")
+    .attr("transform", "translate(20,0)");
+
+var bars = vis.selectAll("g.bar")
+    .data(data)
+  .enter().append("svg:g")
+    .attr("class", "bar")
+    .attr("transform", function(d, i) { return "translate(" + labelpad + "," + y(i) + ")"; });
+
+bars.append("svg:rect")
+    .attr("fill", function(d, i) { return colorlist[i % 2]; } )   //Alternate colors
+    .attr("width", x)
+    .attr("height", y.rangeBand());
+
+bars.append("svg:text")
+    .attr("x", 0)
+    .attr("y", 10 + y.rangeBand() / 2)
+    .attr("dx", -6)
+    .attr("dy", ".35em")
+    .attr("text-anchor", "end")
+    .text(function(d, i) { return labellist[i]; });
+
+
+var rules = vis.selectAll("g.rule")
+    .data(x.ticks(10))
+  .enter().append("svg:g")
+    .attr("class", "rule")
+    .attr("transform", function(d) { return "translate(" + x(d) + ", 0)"; });
+
+rules.append("svg:line")
+    .attr("y1", h)
+    .attr("y2", h + 6)
+    .attr("x1", labelpad)
+    .attr("x2", labelpad)
+    .attr("stroke", "black");
+
+rules.append("svg:line")
+    .attr("y1", 0)
+    .attr("y2", h)
+    .attr("x1", labelpad)
+    .attr("x2", labelpad)
+    .attr("stroke", "white")
+    .attr("stroke-opacity", .3);
+
+
+rules.append("svg:text")
+    .attr("y", h + 8)
+    .attr("x", labelpad)
+    .attr("dy", ".71em")
+    .attr("text-anchor", "middle")
+    .text(x.tickFormat(10));
+
+</script>

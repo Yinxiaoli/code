@@ -1,0 +1,807 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script> 
+    <script>!window.jQuery && document.write(unescape('%3Cscript src="/public/scripts/libs/jquery-1.6.3.min.js"%3E%3C/script%3E'))</script> 
+ 
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script> 
+    <script>!jQuery.ui && document.write(unescape('%3Cscript src="/public/scripts/libs/jquery-ui-1.8.16.custom.min.js"%3E%3C/script%3E'))</script> 
+
+    <script src="image_upload.js"></script>
+    <script src="raphael.js"></script>		
+
+    <!-- Insert HIT Parameters Here -->
+
+
+    <script language=javascript type='text/javascript'>  
+      var gParameters = new Object;
+      gParameters.requestURL = "request.php";
+      gParameters.htmlDir = "examples/html";
+    
+      // Global constants
+      gParameters.tooltipWidth = 500;
+      gParameters.tooltipDelay = 1000;
+      gParameters.forceGuess = true;
+      gParameters.numChoicesPerRow = 6;
+      gParameters.part_diameter = '5';
+      gParameters.auto_submit_part_clicks = false;
+
+      gParameters.debug_json = false;
+
+      gParameters.num_preview_classes=10;
+      gParameters.question_select_method="information_gain";
+      gParameters.disable_computer_vision=false;
+      gParameters.disable_binary=true;
+      gParameters.disable_click=false;
+      gParameters.disable_multiple=false;
+
+      gParameters.debug=false;
+      gParameters.debug_num_class_print=10;
+      gParameters.debug_num_samples=0;
+      gParameters.debug_probability_maps=true;
+      gParameters.debug_click_probability_maps=false;
+      gParameters.debug_max_likelihood_solution=true;
+      gParameters.debug_question_entropies=false;
+
+      gParameters.partbox_style = { "stroke" : "#00FFFF", "fill":"#00FFFF",  "fill-opacity":".5", "radius" : 7, "stroke-width":2, "cursor":"pointer" };
+      gParameters.image_width = 400.0;
+
+      gParameters.extraInstructions = new Array();
+      gParameters.extraInstructions["binary"] = "Select yes or no. If the applicable part isn't visible, make your best guess, then select \"Can't Tell\".";
+      gParameters.extraInstructions["multiple_choice"] = "Select one. If the applicable part isn't visible, make your best guess, then select \"Can't Tell\".";
+      gParameters.extraInstructions["batch"] = "Select at least one. If the applicable part isn't visible, make your best guess, then select \"Can't Tell\".";
+      gParameters.extraInstructions["part_click"] = "Click on the applicable part in the uploaded image to the left.  If the part is not visible in the image, click 'Not Visible'.";
+    </script>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Bird Species Identification Tool</title>
+    <link rel="stylesheet" href="20q.css">
+  </head>
+
+<body>
+  <script language=javascript type='text/javascript'> 
+    var questionDiv = null, classesDiv = null, mainImage = null, debugDiv = null, canvas = null, canvasImage = null;
+    var isFirst = true;
+    var numClassRankUpdates = 0;
+    var topClassesTable = null;
+    var choicesTable=null, nextButtons = new Array(), choicesRow=null;
+    var start_time = null;
+    var JSONvis = "";
+    var numQuestions = 0;
+
+    var classes = null, parts = null, poses = null, attributes = null, certainties = null;
+    var session_id = null, question_id = null;
+    var pos_x, pos_y, hasClick=false;
+    var top_classes = null;   
+    var num_click_questions = 0;
+
+    var image_name = null;
+    var partbox = null; 
+
+    var isOpera, isIE = false;
+    if(typeof(window.opera) != 'undefined'){isOpera = true;}
+    if(!isOpera && navigator.userAgent.indexOf('Internet Explorer') >= 0){isIE = true};
+
+    function OnMouseExit() { 
+      mainImage.src = image_name;
+    }
+
+    function Init() {
+      questionDiv = document.getElementById('questionDiv');  
+      classesDiv = document.getElementById('classesDiv');    
+      skipImage = document.getElementById('skipImage');   
+      mainImage = document.getElementById('mainImage'); 
+      debugDiv = document.getElementById('debugDiv'); 
+      debugLink = document.getElementById('debugLink'); 
+      $("#canvas").hide();
+      $("#classesDiv").hide();
+      $("#questionDiv").hide();
+
+      canvas = Raphael("canvas", gParameters.image_width, gParameters.image_width);
+      mainImage.style.display = "none";
+      canvasImage = canvas.image(mainImage.src, 0, 0, gParameters.image_width, gParameters.image_width);
+      mainImage.onload = function() {
+        zoom = (mainImage.width > mainImage.height ? gParameters.image_width/mainImage.width : gParameters.image_width/mainImage.height);
+        canvasImage.attr({"src":mainImage.src, "width":(mainImage.width*zoom),"height":(mainImage.height*zoom)});
+      }
+      partbox = canvas.circle(0, 0, gParameters.partbox_style.radius);
+      partbox.attr(gParameters.partbox_style);
+      partbox.hide();
+      partbox.drag(
+        function(dx,dy) { pos_x = (this.anchor_x+dx)/zoom; pos_y = (this.anchor_y+dy)/zoom; partbox.attr({"cx":(pos_x*zoom),"cy":(pos_y*zoom)}); },
+        function() { this.anchor_x = partbox.attr("cx"); this.anchor_y = partbox.attr("cy"); },
+        null);
+
+      ParseArguments();
+      LoadDefinitions();
+    }
+
+    /************ Server Communication ****************************/
+
+    function JSONRPCRequest(JSONrequest, callback) {
+      var args = new Array();
+      args[0] = new Array();
+      args[0].name = "json";
+      args[0].value = escape(JSONrequest);
+      httpRequest("GET", gParameters.requestURL, true, args, function(JSONtext) {
+        JSONvis += '<font color=#0000FF>' + JSONrequest + '</font>\n<br/>\n<br/>' + 
+                   '<font color=#FF0000>' + JSONtext + '</font>\n<br/>\n<br/>';
+        if(gParameters.debug_json)
+          document.getElementById('infoDiv').innerHTML = JSONvis;
+        
+        if(callback)
+          callback(JSONtext);
+      });
+    }
+
+    // Read all class and question definitions from the server 
+    function LoadDefinitions() {
+      JSONRPCRequest('{"method":"get_definitions","jsonrpc":"2.0","classes":true,"questions":true,"certainties":true,"parts":true}', function(JSONtext) {
+        var definitions = eval('(' + JSONtext + ')');
+        classes = definitions['classes'];
+        parts = definitions['parts'];
+        poses = definitions['poses'];
+        attributes = definitions['attributes'];
+        certainties = definitions['certainties'];
+        questions = definitions['questions'];
+
+        
+
+
+      if(gParameters.debug) {
+        if(gParameters.debug_max_likelihood_solution) {
+          var mlLink = document.createElement('a');
+          var mlLinkText=document.createTextNode('Max Likelihood Solution');
+          mlLink.appendChild(mlLinkText);
+          mlLink.className = "debugLink";
+          mlLink.onmouseover = function() {
+            mainImage.src = session_dir + "/" + session_id + "_ml_q" + num_click_questions + ".png";
+          };
+          mlLink.onmouseout = OnMouseExit;
+          debugDiv.appendChild(document.createTextNode("  "));
+          debugDiv.appendChild(mlLink);
+        }
+        if(gParameters.debug_probability_maps) {
+          for(var i = 0; i < parts.length; i++) {
+            var partLink = document.createElement('a');
+            var partLinkText=document.createTextNode(parts[i]["part_name"]);
+            partLink.appendChild(partLinkText);
+            partLink.i = i;
+            partLink.className = "debugLink";
+            partLink.onmouseover = function() {
+              mainImage.src = session_dir + "/" + session_id + "_" + num_click_questions + "_" + parts[this.i]["part_name"].replace(/ /g,"_") + "_heat.png";
+            }
+            partLink.onmouseout = OnMouseExit;
+            debugDiv.appendChild(document.createTextNode("  "));
+            debugDiv.appendChild(partLink);
+          }
+        }
+      }
+      });
+    }
+
+    // Ask the server to start a new session for the image 'image_name', causing initial computer vision preprocessing to occur
+    function StartSession() {
+      JSONRPCRequest('{"method":"new_session","jsonrpc":"2.0","mkdir":true}', function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        top_classes = res['top_classes'];
+        session_id = res['session_id'];
+        session_dir = res['session_dir'];
+        UploadImage();
+      });
+    }
+
+    
+
+    // Ask the server to start a new session for the image 'image_name', causing initial computer vision preprocessing to occur
+    function PreprocessImage(c, b) {
+      numQuestions = 0;
+      num_click_questions = 0;
+      $("#questionDiv").fadeOut(500, function() {
+          while (questionDiv.hasChildNodes())
+            questionDiv.removeChild(questionDiv.firstChild);
+        });
+      $("#upload-status-text").html("Preprocessing Image...");
+      $("#upload-animation").fadeIn(125);
+
+      //image_name = basename(document.getElementById("uploadfile").value);
+      mainImage.src = image_name;
+      if(gParameters.debug) {
+        debugDiv.style.visibility = 'visible';
+        debugLink.style.visibility = 'visible';
+        var base = session_dir + "/" + session_id;
+        debugLink.href = session_dir + "/" + base.replace(/\//g,"_") + ".html";
+      }
+      var req = {};
+      var x = {};
+      x["imagename"] = gParameters.htmlDir + '/' + image_name;
+      req["jsonrpc"] = "2.0";
+      req["method"] = "initialize_20q";
+      req["session_id"] = session_id;
+      req["num_classes"] = gParameters.num_preview_classes;
+      req["question_select_method"] = gParameters.question_select_method;
+      req["x"] = x;
+      req["debug"] = gParameters.debug;
+      req["debug_click_probability_maps"] = gParameters.debug_click_probability_maps;
+      req["debug_max_likelihood_solution"] = gParameters.debug_max_likelihood_solution;
+      req["debug_probability_maps"] = gParameters.debug_probability_maps;
+      req["debug_num_class_print"] = gParameters.debug_num_class_print;
+      req["debug_num_samples"] = gParameters.debug_num_samples;
+      req["debug_question_entropies"] = gParameters.debug_question_entropies;
+      req["disable_binary"] = gParameters.disable_binary;
+      req["disable_click"] = gParameters.disable_click;
+      req["disable_computer_vision"] = gParameters.disable_computer_vision;
+      req["disable_multiple"] = gParameters.disable_multiple;
+
+      JSONRPCRequest(JSON.stringify(req), function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        if(!res['top_classes']) {
+          alert('Bad response to PreprocessImage(): ' + JSONtext);
+        } else {
+          $("#upload-status-text").html("Preprocessing Finished");
+          $("#upload-animation").hide();
+          $("#upload-box").hide();
+          $("#canvas").fadeIn(500);
+          top_classes = res['top_classes'];
+          UpdateTopClasses();
+          GetNextQuestion();
+          if(c) c.innerHTML = b;
+        }
+      });
+    }
+
+    // Ask the server to compute which question to query the user
+    function GetNextQuestion() {
+      JSONRPCRequest('{"jsonrpc":"2.0","method":"next_question","session_id":"'+session_id+'"}', function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        if(res['question_id'] < 0) {
+          alert('Bad response to GetNextQuestion(): ' + JSONtext);
+        } else {
+          question_id = parseInt(res['question_id']);
+          question = questions[question_id];
+          UpdateQuestion();
+        }
+      });
+    }
+
+    // Submit an answer to the current question
+    function SubmitAnswer(certainty) {
+      $("#questionDiv").fadeOut(500, function() {
+        });
+
+      answer = {};
+      answer['method'] = "answer_question";
+      answer['session_id'] = session_id;
+      answer['jsonrpc'] = '2.0';
+      answer['question_id'] = question_id;
+      answer['response_time'] = EndTiming();
+      answer['num_classes'] = gParameters.num_preview_classes;
+      if(question['type'] == 'binary') {
+        answer['answer'] = isSelected[0];
+        answer['certainty'] = certainty;
+      } else if(question['type'] == 'multiple_choice' || question['type'] == 'batch') {
+        answer['answers'] = isSelected;
+        answer['certainty'] = certainty;
+      } else if(question['type'] == 'part_click') {
+        answer['x'] = pos_x; 
+        answer['y'] = pos_y; 
+        answer['visible'] = certainty; 
+        num_click_questions++;
+      }
+      json_args = JSON.stringify(answer);
+
+      JSONRPCRequest(json_args, function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        top_classes = res['top_classes'];
+        numQuestions++;
+        UpdateTopClasses();
+        GetNextQuestion();
+      });
+    }
+
+    
+
+
+    /************************* 20Q GUI *********************************/
+
+    // Draw the row of top-ranked classes
+    function UpdateTopClasses() {
+      var oldTable = topClassesTable;
+
+      topClassesTable = document.createElement('table');
+      topClassesTable.className = 'classesTable';
+      var body = document.createElement('tbody');
+      topClassesTable.appendChild(body);
+
+      var imgRow = document.createElement('tr');
+      var nameRow = document.createElement('tr');
+      body.appendChild(imgRow);
+      body.appendChild(nameRow);
+
+      var x_img = [];
+      for(var i=0; top_classes && i < top_classes.length; i++) {
+        var id = parseInt(top_classes[i].class_id);
+
+        var imgCol = document.createElement('td');
+        imgCol.className = 'classesImageCell';
+        var nameCol = document.createElement('td');
+        nameCol.className = 'classesImageCell';
+        if(classes[id]['class_images'] && classes[id]['class_images'].length) {
+          var a = document.createElement('a');
+          a.href = "http://vasuki.ucsd.edu/mediawiki/index.php/Category:" + classes[id]['class_name'];
+          a.target="_blank"
+          var img = document.createElement('img');
+          if('img_src' in top_classes[i])
+            img.src = top_classes[i].img_src;
+          else
+            img.src = classes[id]['class_images'][0];
+          img.height = 80;
+          img.width = 80;
+	  imgCol.appendChild(a);
+	  a.appendChild(img);
+        }
+        var cellText = document.createTextNode(classes[id]['class_name'].replace(/\_/g," "));
+        nameCol.appendChild(cellText);
+	if(gParameters.debug) {
+          nameCol.appendChild(document.createElement('br'));
+          nameCol.appendChild(document.createTextNode(top_classes[i].prob.toFixed(4)));
+        }
+
+        nameCol.appendChild(document.createElement('br'));
+        x_img[i] = document.createElement('img');
+        x_img[i].src = "images/no.png";
+        x_img[i].className = "removeClass";
+        x_img[i].width = x_img[i].height = 14;
+        x_img[i].i = id;
+        x_img[i].onclick = function() {
+          JSONRPCRequest('{"jsonrpc":"2.0","method":"verify_class","session_id":"'+session_id+'", "answer" : 0, "class_id" : ' + this.i + ', "num_classes" : ' + gParameters.num_preview_classes + '}', function(JSONtext) {
+            var res = eval('(' + JSONtext + ')');
+            if(res['top_classes']) {
+              numQuestions++;
+              top_classes = res['top_classes'];
+              UpdateTopClasses();
+            }
+          });
+          return true;
+        };
+        nameCol.appendChild(x_img[i]);
+
+        imgRow.appendChild(imgCol);
+        nameRow.appendChild(nameCol);
+      }
+
+      $("#classesDiv").show();
+      if(numClassRankUpdates % 2 == 0) {
+        document.getElementById("classesDiv1").appendChild(topClassesTable);
+        $("#classesDiv1").fadeIn(500);
+        $("#classesDiv2").fadeOut(500, function() { RemoveChildren(document.getElementById("classesDiv2")); } );
+      } else {
+        document.getElementById("classesDiv2").appendChild(topClassesTable);
+        $("#classesDiv2").fadeIn(500);
+        $("#classesDiv1").fadeOut(500, function() { RemoveChildren(document.getElementById("classesDiv1")); } );
+      }
+      numClassRankUpdates = numClassRankUpdates+1;
+    }
+
+    function RemoveChildren(par) { 
+      while (par.hasChildNodes()) {
+        par.removeChild(par.lastChild);
+      }
+    }
+
+    // Draw the row of top-ranked classes
+    function UpdateQuestion() {
+      isFirst = false;
+      isSelected = new Array;
+      selected = new Array();
+      var td = new Array;
+      var tdLab = new Array;
+      var tip = new Array;  
+        
+      var infoDiv = document.createElement('div');
+      infoDiv.className = 'infobox';
+        
+      // The HTML where the question being posed is described
+      var qDiv = document.createElement('div');
+      qDiv.className = 'questionText';
+      qDiv.innerHTML = question['part_visualization'] ? '<table><tr><td><img width=100 src="'+question['part_visualization']+'"/></td><td>' +  question['question_text'] + '</td></tr></table>' : 
+        question['question_text'];
+        
+      infoDiv.appendChild(qDiv);
+        
+      while (questionDiv.hasChildNodes())
+          questionDiv.removeChild(questionDiv.firstChild);
+
+      // The HTML for additional instructions
+      var instructionsDiv = document.createElement('div');
+      instructionsDiv.className = 'instructionsText';
+      instructionsDiv.innerHTML = gParameters.extraInstructions[question['type']];
+      infoDiv.appendChild(instructionsDiv);
+      questionDiv.appendChild(infoDiv);
+        
+      
+      // A table with a selectable list of attribute check responses
+      if(question['type'] == 'binary' || question['type'] == 'multiple_choice' || question['type'] == 'batch') {
+        var attributeTable = document.createElement('table');
+        attributeTable.className = 'attributeTable';
+        var attributeTableBody = document.createElement('tbody');
+        attributeTable.appendChild(attributeTableBody);
+        var col = 0, row = 0;
+        var currRow = null;
+        attributeInputs = new Array;
+        var choices = question['choices'];
+        var maxSelect = 8;
+        if(question['type'] == 'binary') {
+          choices = eval('(' + '[{"attribute_value":"yes"},{"attribute_value":"no"}]' + ')');
+	  maxSelect = 1;
+        } else if(question['type'] == 'multiple_choice')
+          maxSelect = 1;
+        for(var i = 0; i < choices.length; i++) {
+          if(col == 0) {
+            if(row != 0) 
+              attributeTableBody.appendChild(currRow);
+            row++;
+            currRow = document.createElement('tr');
+          }
+          col++;
+          isSelected[i] = 0;
+          td[i] = document.createElement('td');
+          td[i].className = 'attributeCell';
+	  if(choices[i]["attribute_visualization"]) {
+            var img = document.createElement('img');
+            img.className = 'attributeImage';
+            img.src = choices[i]["attribute_visualization"];
+            td[i].appendChild(img);
+          }
+	  tdLab[i] = document.createElement('div');
+          tdLab[i].className = 'attributeLabel';
+          tdLab[i].innerHTML = choices[i]["attribute_value"];
+          td[i].appendChild(document.createElement('br'));
+          td[i].appendChild(tdLab[i]);
+          td[i].i = i; 
+          td[i].clickAttribute = function() {
+            var i = this.i;
+            isSelected[i] = isSelected[i] ? 0 : 1;
+            td[i].className = isSelected[i] ? 'attributeCell selected' : 'attributeCell';
+            tdLab[i].className = isSelected[i] ? 'attributeLabel selected' : 'attributeLabel';
+            
+            if(isSelected[i]) {
+              selected[selected.length] = i;
+              if(selected.length > maxSelect) 
+                td[selected[0]].clickAttribute();
+            } else {
+              for(var j = 0; j < selected.length; j++) {
+                if(selected[j] == i) {
+                  selected.splice(j,1);
+                  break;
+                }
+              }
+            }
+            EnableButtons();
+          };
+          td[i].onclick = td[i].clickAttribute;
+          
+          if(choices[i]["tooltip"]) 
+            AddTip(td[i], choices[i]["tooltip"]);          
+          
+          currRow.appendChild(td[i]);
+          
+          if(col >= gParameters.numChoicesPerRow) 
+            col = 0;
+        } 
+
+        attributeTableBody.appendChild(currRow);
+        questionDiv.appendChild(attributeTable);
+        mainImage.style.cursor = "default";
+        canvasImage.attr({"cursor" : "default"});
+        canvasImage.node.onclick = null;
+      } else {
+        canvasImage.attr({"cursor" : "crosshair"});
+        canvasImage.node.onclick = function(e) { 
+          c = document.getElementById('canvas');
+          pos_x = (e.clientX-findPosX(c))/zoom;  pos_y = (e.clientY-findPosY(c))/zoom;
+          partbox.attr({"cx":(pos_x*zoom), "cy":(pos_y*zoom)});
+          ClickPart();
+        };
+      }
+      
+      AddButtonControls();	
+      EnableButtons();	
+      partbox.hide();
+      hasClick = false;
+      $("#questionDiv").fadeIn(500, function() { StartTiming(); } );
+    }
+   
+    
+      
+    // Instructions for selecting the confidence of an answer
+    function AddButtonControls() {  
+      // Buttons for selecting the confidence of an answer and going 
+      // to the next question
+      choicesTable = document.createElement('table');
+      choicesRow = document.createElement('tr');
+      var tBody = document.createElement('tbody');
+      tBody.appendChild(choicesRow);
+      choicesTable.appendChild(tBody);
+      if(question['type'] != 'part_click') {
+        for(var i = 0; i < certainties.length; i++) {
+          nextButtons[i] = new Button(certainties[i], SubmitAnswer, 'buttonNext', certainties[i]);
+          choicesRow.appendChild(nextButtons[i].td);
+        }
+      } else {
+        nextButtons[0] = new Button('Not Visible', SubmitAnswer, 'buttonNext', false);
+        choicesRow.appendChild(nextButtons[0].td);
+        if(!gParameters.auto_submit_part_clicks) {
+          nextButtons[1] = new Button('Next', SubmitAnswer, 'buttonNext', true);
+          choicesRow.appendChild(nextButtons[1].td);
+        }
+      }
+      questionDiv.appendChild(choicesTable);
+    };
+      
+    function EnableButtons() {
+      if(question['type'] != 'part_click') {
+        e = selected.length > 0;
+        for(var i = 0; i < certainties.length; i++) {
+          nextButtons[i].SetEnabled(e || certainties[i] == "not_visible" || certainties[i] == "not visible");
+        }
+      } else {
+        nextButtons[0].SetEnabled(true);
+        if(!gParameters.auto_submit_part_clicks) 
+          nextButtons[1].SetEnabled(hasClick);
+      } 
+    };
+
+    function ClickPart() {
+	partbox.show();
+        hasClick = true;
+	EnableButtons();
+        if(gParameters.auto_submit_part_clicks)
+          SubmitAnswer(true);
+    }
+
+    /*******************************************************************/
+
+    function GetCurrentTime() {
+      var my_current_timestamp = new Date();
+      return my_current_timestamp.getTime();
+    }
+
+    function StartTiming() {
+      start_time = GetCurrentTime();
+    }
+
+    function EndTiming() {
+      var end_time = GetCurrentTime();
+      var time_difference = (end_time - start_time) / 1000;
+      return time_difference;
+    }
+  
+    // Simple button control based on http://sophie-g.net/jobs/css/e_buttons.htm
+    function Button(name, func, id, args) {
+      this.element = document.createElement('span');
+      this.element.className = 'button';
+      this.element.id = id;
+      this.icon = document.createElement('span');
+      this.icon.className = 'icon';
+      this.icon.innerHTML = name;
+      this.element.appendChild(this.icon);
+      this.element.func = func;
+      this.element.args = args;
+      this.element.isEnabled = true;
+      this.td = document.createElement('td');
+      this.td.appendChild(this.element);
+      
+      this.element.onclick = function() {
+        if(this.isEnabled)
+          this.func(this.args);
+      };
+      
+      this.SetEnabled = function(e) {
+        this.element.isEnabled = e;
+        this.element.className = e ? 'button' : 'buttonDis';
+      };
+    };
+    
+    function AddTip(control, html) {
+      var h = "<span class='tip'>"+html+"</span>";
+      this.TipShow = function() {
+        Tip(h, WIDTH, gParameters.tooltipWidth, DELAY, gParameters.tooltipDelay);
+      }
+      control.onmouseout=UnTip;
+      control.onmouseover=this.TipShow;
+    }
+    
+    
+    /************************************************************************************/
+    // HTTP communication helper functions
+
+    function initReq(request, reqType, url, bool, args, callback) {
+      try {
+        var argStr = "";
+        if(args) {
+            for(var i = 0; i < args.length; i++) {
+                argStr += (i ? "&" : "") + args[i].name + "=" + args[i].value;
+            }
+        }
+        if(reqType.toLowerCase() != "post" && argStr.length > 0)
+          url += "?" + argStr;
+        request.open(reqType, url, bool);
+        //alert("here2");
+
+        // Specify the function that will handle the HTTP response
+        request.onreadystatechange = function() {
+            if (request.readyState == 4) {
+                if (request.status == 200) {
+                    if(callback) callback(request.responseText);
+                    else cookie = request.responseText;
+                } else {
+                    alert("Status " + request.status + " returned editing page " + url);
+                    if(callback) callback(null);
+                }
+            }
+        };
+
+        // If the reqType param is POST, then the
+        // fifth argument to the function is the POSTed data
+        if (reqType.toLowerCase() == "post") {
+            // Set the Content-Type header for a POST request
+            request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            var postContent = "";//"\r\n--" + boundary + "\r\n";
+            postContent += argStr;
+            request.send(postContent);
+        } else {
+            request.send(null);
+        }
+        if(!bool)
+            cookie = request.responseText;
+      } catch (errv) {
+        alert("The application cannot contact the server " + url + " at the moment. " +
+              "Please try again in a few seconds.\n" +
+              "Error detail: " + errv.message);
+      }
+    };
+
+    function httpRequest(reqType,url,asynch,args, callback) {
+      var request = null;
+
+      // Mozilla-based browsers
+      if (window.XMLHttpRequest) {
+        request = new XMLHttpRequest();
+      } else if (window.ActiveXObject) {
+        request = new ActiveXObject("Msxml2.XMLHTTP");
+        if (!request) {
+            request = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+      }
+
+      // Request could still be null if neither ActiveXObject
+      // initialization succeeded
+      if (request) {
+        initReq(request, reqType, url, asynch, args, callback);
+        return;
+      } else {
+        alert("Your browser does not permit the use of all " +
+              "of this application's features!");
+      }  
+      callback(null);
+    }
+function remove(theVar){
+	var theParent = theVar.parentNode;
+	theParent.removeChild(theVar);
+}
+
+  function findPosX(obj)
+  {
+    var curleft = 0;
+    if(obj.offsetParent)
+        while(1) 
+        {
+          curleft += obj.offsetLeft;
+          if(!obj.offsetParent)
+            break;
+          obj = obj.offsetParent;
+        }
+    else if(obj.x)
+        curleft += obj.x;
+    return curleft;
+  }
+  function findPosY(obj)
+  {
+    var curtop = 0;
+    if(obj.offsetParent)
+        while(1)
+        {
+          curtop += obj.offsetTop;
+          if(!obj.offsetParent)
+            break;
+          obj = obj.offsetParent;
+        }
+    else if(obj.y)
+        curtop += obj.y;
+    return curtop;
+  }
+
+function ParseArguments()
+{
+    var query = window.location.search.substring(1);
+    var pairs = query.split("&");
+
+    for (var i=0;i<pairs.length;i++) {
+        var pos = pairs[i].indexOf('=');
+        if (pos >= 0) {
+            var argname = pairs[i].substring(0,pos);
+            var value = pairs[i].substring(pos+1);
+            if(argname.indexOf("debug_num_samples") == 0) gParameters[argname] = parseInt(value);
+            else if(argname.indexOf("debug") == 0 || argname.indexOf("disable") == 0) gParameters[argname] = value == 'true' || value == '1';
+        }
+    }
+};
+
+function basename(path) {
+    return path.replace(/\\/g,'/').replace( /.*\//, '' );
+}
+ 
+function dirname(path) {
+    return path.replace(/\\/g,'/').replace(/\/[^\/]*$/, '');;
+} 
+    
+
+$(document).ready(function() {
+	initDragAndDrop();
+	Init();
+});
+
+  </script>
+   
+  <script type="text/javascript" src="wz_tooltip.js"></script>
+
+  <div id="mainInstructions">
+    <form name="uploadForm" id="uploadForm" enctype="multipart/form-data" action="request.php" method="POST">
+      <input type="hidden" name="MAX_FILE_SIZE" value="4000000" />
+      <input type="hidden" id="uploadJSON" name="json" />
+        Upload an image of a bird: 
+      <input name="uploadedfile" id="uploadfile" type="file" onchange="StartSession(); return false;" /><br />
+      <div id="debugDiv" name="debugDiv">
+        <a id="debugLink" name="debugLink" target="_blank"> View Debug Output</a>
+      </div>
+    </form>
+  </div>
+
+  <div id="upload-box"> 
+    <div> 
+      <p id="upload-status-text_p">
+        <span id="upload-status-text"> 
+  	  Drag and Drop an Image of a Bird...
+        </span>
+        <img id="upload-animation" src="images/loading.gif" />
+      </p>
+      <p id="upload-details"> 
+	This tool will help you identify the species
+      </p> 
+    </div> 
+  </div> 
+
+  <div id="imageContainer" >
+    <div id="canvas" >
+      <b></b><img name="mainImage" id="mainImage" alt="" /> 
+    </div> 
+  </div> 
+
+  <div id="drop-box-overlay"> 
+    <h1>Drop image anywhere to upload...</h1> 
+  </div>
+
+  <div id='questionDiv'></div> 
+
+  <div id="classesDiv">
+<center>
+    <font size=+2><b>Top Ranked Bird Species</b></font>
+    <div id="classesDiv1" style="position:fixed"></div>
+    <div id="classesDiv2" style="position:fixed"></div>
+   </center>
+  </div>
+
+  <div id="infoDiv" name="infoDiv"></div>
+
+</body>
+</html>
+

@@ -1,0 +1,574 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script> 
+    <script>!window.jQuery && document.write(unescape('%3Cscript src="/public/scripts/libs/jquery-1.6.3.min.js"%3E%3C/script%3E'))</script> 
+ 
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script> 
+    <script>!jQuery.ui && document.write(unescape('%3Cscript src="/public/scripts/libs/jquery-ui-1.8.16.custom.min.js"%3E%3C/script%3E'))</script> 
+
+    <script src="image_upload.js"></script>
+    <script src="raphael.js"></script>	
+
+    <!-- Insert HIT Parameters Here -->
+
+
+    <script language=javascript type='text/javascript'>  
+      var gParameters = new Object;
+      gParameters.requestURL = "request.php";
+      gParameters.htmlDir = "examples/html";
+    
+      // Global constants
+      gParameters.debug_json = false;
+      gParameters.debug=false;
+      gParameters.debug_probability_maps = true;
+      gParameters.debug_max_likelihood_solution = true;
+      gParameters.debug_pose=false;
+      gParameters.debug_score=false;
+    </script>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Deformable Part Model Smart Labeling Tool</title>
+    <link rel="stylesheet" href="interactive_label.css">
+  </head>
+
+<body>
+  <script language=javascript type='text/javascript'> 
+    var mainImage = null, debugDiv = null;
+    var start_time = null;
+    var JSONvis = "";
+    var num_click_questions = 0;
+
+    var zoom = 1;
+    var isAnchored = [];
+    var classes = null, parts = null, poses = null, attributes = null, certainties = null, poses_by_name = null;
+    var session_id = null;
+    var part_locs = null;
+    var partShapes, partCircles, partLines, partKeys, partStyles, partLabels;
+    
+    var image_name = null;
+    var canvas = null;
+    var queuedJsonRequest = null;
+    var isPreviewingPartLocations = false;
+
+    var isOpera, isIE = false;
+    if(typeof(window.opera) != 'undefined'){isOpera = true;}
+    if(!isOpera && navigator.userAgent.indexOf('Internet Explorer') >= 0){isIE = true};
+
+    function OnMouseExit() {
+      mainImage.src = image_name;
+      //mainImage.width=500;
+    }
+
+    function Init() {
+      debugDiv = document.getElementById('debugDiv'); 
+      //debugLink = document.getElementById('debugLink'); 
+      $("#canvas").hide();
+
+      ParseArguments();
+      LoadDefinitions();
+
+      canvas = Raphael("canvas", 500, 550);
+      mainImage = document.getElementById("mainImage");
+      mainImage.style.display = "none";
+      canvasImage = canvas.image(mainImage.src, 0, 0, 500, 500);
+      mainImage.onload = function() {
+        zoom = (mainImage.width > mainImage.height ? 500.0/mainImage.width : 500.0/mainImage.height);
+        canvasImage.attr({"src":mainImage.src, "width":(mainImage.width*zoom),"height":(mainImage.height*zoom)});
+        nonvisibleLabel.attr({"x":5,"y":(mainImage.height*zoom)+20});
+        nonvisibleRect.attr({"x":0,"y":(mainImage.height*zoom),"width":(mainImage.width*zoom),"height":30});
+      }
+    }
+
+    /************ Server Communication ****************************/
+
+    function JSONRPCRequest(JSONrequest, callback) {
+      var args = new Array();
+      args[0] = new Array();
+      args[0].name = "json";
+      args[0].value = escape(JSONrequest);
+      httpRequest("GET", gParameters.requestURL, true, args, function(JSONtext) {
+        JSONvis += '<font color=#0000FF>' + JSONrequest + '</font>\n<br/>\n<br/>' + 
+                   '<font color=#FF0000>' + JSONtext + '</font>\n<br/>\n<br/>';
+        if(gParameters.debug_json)
+          document.getElementById('infoDiv').innerHTML = JSONvis;
+        
+        if(callback)
+          callback(JSONtext);
+      });
+    }
+
+    // Read all class and question definitions from the server 
+    function LoadDefinitions() {
+      JSONRPCRequest('{"method":"get_definitions","jsonrpc":"2.0","classes":false,"questions":false,"certainties":false,"parts":true,"poses":true}', function(JSONtext) {
+
+        var definitions = eval('(' + JSONtext + ')');
+        classes = definitions['classes'];
+        parts = definitions['parts'];
+        poses = definitions['poses'];
+        attributes = definitions['attributes'];
+        certainties = definitions['certainties'];
+        questions = definitions['questions'];
+
+        poses_by_name = {};
+        if(poses) {
+          for(var i = 0; i < poses.length; i++) {
+            poses_by_name[poses[i].pose_name] = poses[i];
+          }
+        }
+
+        BuildPartGUI();
+      
+
+        if(gParameters.debug) {
+          if(gParameters.debug_max_likelihood_solution) {
+            var mlLink = document.createElement('a');
+            var mlLinkText=document.createTextNode('Max Likelihood Solution');
+            mlLink.appendChild(mlLinkText);
+            mlLink.className = "debugLink";
+            mlLink.onmouseover = function() {
+              mainImage.src = session_dir + "/" + session_id + "_ml_q" + num_click_questions + ".png";
+              //mainImage.width=500;
+            };
+            mlLink.onmouseout = OnMouseExit;
+            debugDiv.appendChild(document.createTextNode("  "));
+            debugDiv.appendChild(mlLink);
+          }
+          if(gParameters.debug_probability_maps) {
+            for(var i = 0; i < parts.length; i++) {
+              var partLink = document.createElement('a');
+              var partLinkText=document.createTextNode(parts[i]["part_name"]);
+              partLink.appendChild(partLinkText);
+              partLink.i = i;
+              partLink.className = "debugLink";
+              partLink.onmouseover = function() {
+                mainImage.src = session_dir + "/" + session_id + "_" + num_click_questions + "_" + parts[this.i]["part_name"].replace(/ /g,"_") + "_heat.png";
+                //mainImage.width=500;
+              }
+              partLink.onmouseout = OnMouseExit;
+              debugDiv.appendChild(document.createTextNode("  "));
+              debugDiv.appendChild(partLink);
+            }
+          }
+        }
+      });
+    }
+
+    // Ask the server to start a new session for the image 'image_name', causing initial computer vision preprocessing to occur
+    function StartSession() {
+      num_click_questions = 0;
+      JSONRPCRequest('{"method":"new_session","jsonrpc":"2.0","mkdir":true}', function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        top_classes = res['top_classes'];
+        session_id = res['session_id'];
+        session_dir = res['session_dir'];
+        UploadImage();
+      });
+    }
+
+    
+
+    // Ask the server to start a new session for the image 'image_name', causing initial computer vision preprocessing to occur
+    function PreprocessImage(c, b) {
+      $("#upload-status-text").html("Preprocessing Image...");
+      $("#upload-animation").fadeIn(125);
+
+      //image_name = basename(document.getElementById("uploadfile").value);
+      mainImage.src = image_name;
+
+      //mainImage.width=500;
+      if(gParameters.debug) {
+        debugDiv.style.visibility = 'visible';
+        debugLink.style.visibility = 'visible';
+        var base = session_dir + "/" + session_id;
+        debugLink.href = session_dir + "/" + base.replace(/\//g,"_") + ".html";
+      }
+
+      var req = {};
+      var x = {};
+      x["imagename"] = gParameters.htmlDir + '/' + image_name;
+      req["jsonrpc"] = "2.0";
+      req["method"] = "initialize_interactive_parts";
+      req["session_id"] = session_id;
+      req["x"] = x;
+      req["debug"] = gParameters.debug;
+      req["debug_max_likelihood_solution"] = gParameters.debug_max_likelihood_solution;
+      req["debug_probability_maps"] = gParameters.debug_probability_maps;
+      
+      JSONRPCRequest(JSON.stringify(req), function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        if(!res['y']) {
+          alert('Bad response to PreprocessImage(): ' + JSONtext);
+        } else {
+          $("#upload-status-text").html("Preprocessing Finished");
+          $("#upload-animation").hide();
+          $("#upload-box").hide();
+          $("#canvas").fadeIn(500);
+	  part_locs = res["y"]["part_locations"];
+          isAnchored = [];
+          for(var i = 0; i < parts.length; i++) {
+            isAnchored[i] = null;
+            partCircles[i].attr(isAnchored[i] ? { 'fill':'#FF0000', 'stroke':'#FF0000' } : partStyles[i]);
+          }
+          UpdatePartLocations();
+          if(c) c.innerHTML = b;
+        }
+      });
+    }
+
+    // Finalize the location of a part
+    function FinalizePartLocation(part_id) {
+      var loc = {};
+      loc.x = part_locs[part_id].x;
+      loc.y = part_locs[part_id].y;
+      loc.part = part_locs[part_id].part;
+
+      answer = JSON.parse(JSON.stringify(loc));
+      answer['method'] = "label_part";
+      answer['session_id'] = session_id;
+      answer['jsonrpc'] = '2.0';
+      answer['response_time'] = EndTiming();
+      json_args = JSON.stringify(answer);
+
+      JSONRPCRequest(json_args, function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        part_locs = res["y"]["part_locations"];
+        UpdatePartLocations();
+      });
+    }
+
+    // Preview part locations
+    function PreviewPartLocation(part_id) {
+      var loc = {};
+      loc.x = part_locs[part_id].x;
+      loc.y = part_locs[part_id].y;
+      loc.part = part_locs[part_id].part;
+
+      answer = eval('(' + JSON.stringify(loc) + ')');
+      answer['method'] = "preview_part_locations";
+      answer['session_id'] = session_id;
+      answer['jsonrpc'] = '2.0';
+      json_args = JSON.stringify(answer);
+      
+      if(isPreviewingPartLocations) {
+        queuedJsonRequest = json_args;
+      } else {
+        PreviewPartLocationRequest(json_args);
+      }
+    }
+    function PreviewPartLocationRequest(json_args) {
+      isPreviewingPartLocations = true;
+      JSONRPCRequest(json_args, function(JSONtext) {
+        var res = eval('(' + JSONtext + ')');
+        part_locs = res["y"]["part_locations"];
+        UpdatePartLocations();
+        isPreviewingPartLocations = false;
+        if(queuedJsonRequest) {
+          PreviewPartLocationRequest(queuedJsonRequest);
+          queuedJsonRequest = false;
+        }
+      });
+    }
+
+
+    /************************* GUI *********************************/
+    function BuildPartGUI() {
+      partShapes = [];
+      partCircles = [];
+      partLines = [];
+      partKeys = [];
+      partLabels = [];
+      partStyles = [];
+      var colors1 = [ "#FF0000", "#800000", "#00FF00", "#008000", "#FFBF4A", "#000080", "#FFFF00", "#626200", 
+                      "#00FFFF", "#006262", "#FF00FF", "620062", "#FFFFFF", "#000000", "#44200F" ]; 
+      var colors2 = [ "#000000", "#FFFFFF" ];
+      g_style = { "circle" : { "radius" : 7, "stroke-width":2, "cursor":"pointer" }, 
+                  "circle_over" : { "stroke" : "#00FF00", "fill":"#00FF00" }, 
+                  "line" : { "stroke-width": 3, "stroke": "#0000FF" }, 
+                  "drag" : { "stroke-width": 5, "stroke": "#00FF00" }, 
+                  "text" : { "font-family": "Times New Roman", "font-size": 16, "font-style": "normal", 
+	                     "font-weight": "normal", "text-anchor": "middle", "fill" : "#FF0000", "fill-opacity": 1, "cursor":"pointer" },
+                  "key" : { "font-family": "Times New Roman", "font-size": 11, "font-style": "normal", 
+	                     "font-weight": "normal", "text-anchor": "middle", "fill" : "#0000FF", "fill-opacity": 1, "cursor":"pointer" },
+                  "nonvisible_text" : { "font-family": "Times New Roman", "font-size": 16, "font-style": "normal", 
+	                     "font-weight": "normal", "text-anchor": "start", "fill" : "#000000", "fill-opacity": 1 },
+                  "nonvisible_rect" : { "stroke-width": 1, "stroke" : "#6060A0", "fill":"#A0A0FF" } 
+                }; 
+      nonvisibleRect = canvas.rect(0,0, 0,0);
+      nonvisibleRect.attr(g_style.nonvisible_rect);
+      nonvisibleLabel = canvas.text(5,0,"Nonvisible parts:");
+      nonvisibleLabel.attr(g_style.nonvisible_text);
+      for(var i = 0; i < parts.length; i++) {
+        partShapes[i] = canvas.set();
+        if(parts[i].parent_id >= 0) {
+          partLines[i] = canvas.path("M10,20L30,40");
+          partLines[i].attr(g_style.line);
+          partShapes[i].push(partLines[i]);
+        } else
+          partLines[i] = null;
+      }
+
+      dragLine = canvas.path();
+      dragLine.attr(g_style.drag);
+
+      for(var i = 0; i < parts.length; i++) {
+        var ii = i;
+        var color1 = colors1[i%15];
+        var color2 = parts.length > 15 ? colors1[i/15] : colors2[i%2];
+        partStyles[i] = { 'fill':color1, 'stroke':color2 };
+        partCircles[i] = canvas.circle(0, 0, g_style.circle.radius);
+        partCircles[i].attr(g_style.circle);
+        partCircles[i].attr(partStyles[i]);
+        partShapes[i].push(partCircles[i]);
+        partLabels[i] = canvas.text(0,0,parts[i].part_name);
+
+        partShapes[i].i = i;
+        partCircles[i].i = partCircles[i].node.i = i;
+        var start = function () {
+          var ii = this.i;
+          this.pt_x = part_locs[ii].x;
+          this.pt_y = part_locs[ii].y;
+          partCircles[ii].dragging = true;
+          dragLine.attr("path", "M" + (this.pt_x*zoom) + " " + (this.pt_y*zoom) + "L" +  (this.pt_x*zoom) + " " + (this.pt_y*zoom));  
+          dragLine.show();
+        },
+        move = function (dx, dy) {
+          var ii = this.i;
+          part_locs[ii].x = this.pt_x + dx/zoom;
+          part_locs[ii].y = this.pt_y + dy/zoom;
+          part_locs[ii].visible = part_locs[ii].y < mainImage.height;
+          isAnchored[ii] = part_locs[ii];
+          PreviewPartLocation(ii);
+          dragLine.attr("path", "M" + (this.pt_x*zoom) + " " + (this.pt_y*zoom) + "L" +  (part_locs[ii].x*zoom) + " " + (part_locs[ii].y*zoom));  
+        },
+        up = function () {
+          var ii = this.i;
+          partCircles[ii].dragging = false;
+          FinalizePartLocation(ii);
+          dragLine.hide();
+        },
+	hover = function (e) {
+          partCircles[this.i].attr(g_style.circle_over);
+          partLabels[this.i].attr("text", poses_by_name[part_locs[this.i].pose].pose_name);
+          partLabels[this.i].show();
+        },
+        exit = function (e) {
+          partCircles[this.i].attr(isAnchored[this.i] ? { 'fill':'#FF0000', 'stroke':'#FF0000' } : partStyles[this.i]);
+          if(!gParameters.debug_pose) partLabels[this.i].hide();
+        };
+        partCircles[i].node.onmouseup = partCircles[i].node.onmouseout = exit;
+        partCircles[i].node.onmousemove = hover;
+
+        if(parts[i].abbreviation) {
+          partKeys[i] = canvas.text(0,0,parts[i].abbreviation);
+          partKeys[i].attr(g_style.key);
+          partKeys[i].attr({"fill" : color2});
+          partKeys[i].i = partKeys[i].node.i = i;
+          partKeys[i].node.onmouseup = partKeys[i].node.onmouseout = exit;
+          partKeys[i].node.onmousemove = hover;
+          partShapes[i].push(partKeys[i]);
+        }
+      }
+      for(var i = 0; i < parts.length; i++) {
+        partLabels[i].attr(g_style.text);
+        partShapes[i].push(partLabels[i]);
+        if(!gParameters.debug_pose) partLabels[i].hide();
+        partShapes[i].drag(move, start, up);
+      }
+    }
+
+    // Draw the row of top-ranked classes
+    function UpdatePartLocations() {
+      var numNonVisible = 0;
+      for(var i = 0; i < parts.length; i++) {
+        var loc = isAnchored[i] ? isAnchored[i] : part_locs[i];
+        if(!loc.visible && !partCircles[i].dragging) {
+          loc.x = (130+numNonVisible*20)/zoom
+          loc.y = (mainImage.height*zoom+15)/zoom;
+          numNonVisible++;
+        }
+        partCircles[i].attr({"cx":(loc.x*zoom),"cy":(loc.y*zoom)});
+        if(partKeys[i]) partKeys[i].attr({"x":(loc.x*zoom),"y":(loc.y*zoom)});
+        if(partLabels[i]) {
+	  partLabels[i].attr({"x":(loc.x*zoom),"y":(loc.y*zoom-g_style.circle.radius-5)});
+          if(gParameters.debug_pose) {
+            if(gParameters.debug_score) partLabels[i].attr("text", poses_by_name[part_locs[i].pose].pose_name + "(" + part_locs[i].score + ")");
+            else partLabels[i].attr("text", poses_by_name[part_locs[i].pose].pose_name);
+          }
+        }
+        if(partLines[i]) {
+          var parent_loc = isAnchored[parts[i].parent_id] ? isAnchored[parts[i].parent_id] : part_locs[parts[i].parent_id];
+          if(loc.visible && parent_loc.visible) {
+            partLines[i].attr({"path" : "M" + (loc.x*zoom) + " " + (loc.y*zoom) + "L" +  (parent_loc.x*zoom) + " " + (parent_loc.y*zoom)});  
+            partLines[i].show();
+          } else
+            partLines[i].hide();
+        }
+      }
+    }
+
+
+    /*******************************************************************/
+
+    function GetCurrentTime() {
+      var my_current_timestamp = new Date();
+      return my_current_timestamp.getTime();
+    }
+
+    function StartTiming() {
+      start_time = GetCurrentTime();
+    }
+
+    function EndTiming() {
+      var end_time = GetCurrentTime();
+      var time_difference = (end_time - start_time) / 1000;
+      return time_difference;
+    }
+    
+    
+    /************************************************************************************/
+    // HTTP communication helper functions
+
+    function initReq(request, reqType, url, bool, args, callback) {
+      try {
+        var argStr = "";
+        if(args) {
+            for(var i = 0; i < args.length; i++) {
+                argStr += (i ? "&" : "") + args[i].name + "=" + args[i].value;
+            }
+        }
+        if(reqType.toLowerCase() != "post" && argStr.length > 0)
+          url += "?" + argStr;
+        request.open(reqType, url, bool);
+        //alert("here2");
+
+        // Specify the function that will handle the HTTP response
+        request.onreadystatechange = function() {
+            if (request.readyState == 4) {
+                if (request.status == 200) {
+                    if(callback) callback(request.responseText);
+                    else cookie = request.responseText;
+                } else {
+                    alert("Status " + request.status + " returned editing page " + url);
+                    if(callback) callback(null);
+                }
+            }
+        };
+
+        // If the reqType param is POST, then the
+        // fifth argument to the function is the POSTed data
+        if (reqType.toLowerCase() == "post") {
+            // Set the Content-Type header for a POST request
+            request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            var postContent = "";//"\r\n--" + boundary + "\r\n";
+            postContent += argStr;
+            request.send(postContent);
+        } else {
+            request.send(null);
+        }
+        if(!bool)
+            cookie = request.responseText;
+      } catch (errv) {
+        alert("The application cannot contact the server " + url + " at the moment. " +
+              "Please try again in a few seconds.\n" +
+              "Error detail: " + errv.message);
+      }
+    };
+
+    function httpRequest(reqType,url,asynch,args, callback) {
+      var request = null;
+
+      // Mozilla-based browsers
+      if (window.XMLHttpRequest) {
+        request = new XMLHttpRequest();
+      } else if (window.ActiveXObject) {
+        request = new ActiveXObject("Msxml2.XMLHTTP");
+        if (!request) {
+            request = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+      }
+
+      // Request could still be null if neither ActiveXObject
+      // initialization succeeded
+      if (request) {
+        initReq(request, reqType, url, asynch, args, callback);
+        return;
+      } else {
+        alert("Your browser does not permit the use of all " +
+              "of this application's features!");
+      }  
+      callback(null);
+    }
+function remove(theVar){
+	var theParent = theVar.parentNode;
+	theParent.removeChild(theVar);
+}
+
+function ParseArguments()
+{
+    var query = window.location.search.substring(1);
+    var pairs = query.split("&");
+
+    for (var i=0;i<pairs.length;i++) {
+        var pos = pairs[i].indexOf('=');
+        if (pos >= 0) {
+            var argname = pairs[i].substring(0,pos);
+            var value = pairs[i].substring(pos+1);
+            if(argname.indexOf("debug") == 0 || argname.indexOf("disable") == 0) gParameters[argname] = value == 'true' || value == '1';
+        }
+    }
+};
+
+function basename(path) {
+    return path.replace(/\\/g,'/').replace( /.*\//, '' );
+}
+ 
+function dirname(path) {
+    return path.replace(/\\/g,'/').replace(/\/[^\/]*$/, '');;
+} 
+    
+
+$(document).ready(function() {
+	initDragAndDrop();
+	Init();
+});
+
+  </script>
+
+  <div id="mainInstructions">
+    <form name="uploadForm" id="uploadForm" enctype="multipart/form-data" action="request.php" method="POST">
+      <input type="hidden" name="MAX_FILE_SIZE" value="4000000" />
+      <input type="hidden" id="uploadJSON" name="json" />
+        Upload an image of a bird: 
+      <input name="uploadedfile" id="uploadfile" type="file" onchange="StartSession(); return false;" /><br />
+      <div id="debugDiv" name="debugDiv">
+        <a id="debugLink" name="debugLink" target="_blank"> View Debug Output</a>
+      </div>
+    </form>
+  </div>
+
+  <div id="upload-box"> 
+    <div> 
+      <p id="upload-status-text_p">
+        <span id="upload-status-text"> 
+  	  Drag and Drop an Image of a Bird...
+        </span>
+        <img id="upload-animation" src="images/loading.gif" />
+      </p>
+      <p id="upload-details"> 
+	This tool will help you label the locations of the parts of the bird
+      </p> 
+    </div> 
+  </div> 
+
+  <div id="canvas" >
+    <b></b><img name="mainImage" id="mainImage" alt="" /> 
+  </div> 
+
+  <div id="drop-box-overlay"> 
+    <h1>Drop image anywhere to upload...</h1> 
+  </div>
+
+  <div id="infoDiv" name="infoDiv"></div>
+
+</body>
+</html>
+

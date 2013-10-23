@@ -1,0 +1,1 @@
+#MATLAB_DIR=/usr/local/MATLAB/R2012a

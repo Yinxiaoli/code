@@ -1,0 +1,136 @@
+    body {
+      font: normal 1em Verdana, Arial, sans-serif;
+      margin: 0 7px 0 5px;
+      padding: 5px;
+    }
+    span.small {
+      font-size: 90%;
+    }
+    h1 {
+      font-size: 120%;
+      margin: 0;
+      padding: 4px 0;
+    }
+    p {
+      margin: 0;
+      padding: 2px 0;
+    }
+
+    #mainImage {
+	display: none;
+    }
+    #mainInstructions {
+      font-size: 100%;
+      position: absolute;
+    }
+    #canvas {
+      padding: 2px;
+      top: 50px;
+      left: 5px;
+      height: 545px;
+      width: 510px;
+      position: absolute;
+      margin: 0 auto 1em;
+      color: #323251;
+      border: 0.2em solid #848499;
+      background-color: #F4F4FA;
+      text-align: center;
+      -moz-border-radius: 4px 4px;
+      -webkit-border-radius: 4px 4px;
+      border-bottom-left-radius: 4px 4px;
+      border-bottom-right-radius: 4px 4px;
+      border-top-left-radius: 4px 4px;
+      border-top-right-radius: 4px 4px;
+    }
+    #infoDiv {
+      position: absolute;
+      top: 710px;
+      left: 5px;
+    }
+    #plotDiv {
+      position: absolute;
+      top: 50px;
+      left: 540px;
+      height: 545px;
+      width: 410px;
+    }
+
+    #debugDiv {
+      visibility: hidden;
+    }
+    #debugLink {
+      visibility: hidden;
+    }
+
+
+    #drop-box-overlay {
+	margin: 1px;
+	padding: 0;
+	top: 0;
+	left: 0;
+	width: 100%;
+	min-height: 100%;
+	position: fixed;
+	background-color: #222222;
+	display: none;
+	
+	z-index: 50;
+	opacity: 0.9;
+     }
+
+#drop-box-overlay h1 {
+	padding: 2em;
+	top: 38%;
+	left: 35%;
+	position: absolute;
+	
+	border: 2px solid #679B00;
+	background-color: #C9F76F;
+	-moz-border-radius: 4px 4px;
+	-webkit-border-radius: 4px 4px;
+	border-bottom-left-radius: 4px 4px;
+	border-bottom-right-radius: 4px 4px;
+	border-top-left-radius: 4px 4px;
+	border-top-right-radius: 4px 4px;
+	
+	color: #222222;
+	font-size: 150%;
+	text-shadow: 1px 1px 1px #FFFFFF;
+}
+
+#upload-box {
+        padding: 2px;
+        top: 50px;
+        left: 5px;
+        height: 545px;
+        width: 510px;
+        position: absolute;
+	margin: 0 auto 1em;
+	color: #514721;
+	border: 0.2em solid #FFD324;
+	background-color: #FEFFE8;
+	text-align: center;
+	-moz-border-radius: 4px 4px;
+	-webkit-border-radius: 4px 4px;
+	border-bottom-left-radius: 4px 4px;
+	border-bottom-right-radius: 4px 4px;
+	border-top-left-radius: 4px 4px;
+	border-top-right-radius: 4px 4px;
+	z-index: 20;
+}
+
+#upload-status-text_p {
+	font-size: 150%;
+	padding-top: 1.5em;
+	text-shadow: 1px 1px 1px #FFFFFF;
+}
+
+#upload-details {
+	color: #666666;
+	text-shadow: 1px 1px 1px #FFFFFF;
+}
+
+#upload-animation { display: none; }
+
+
+

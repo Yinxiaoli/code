@@ -1,0 +1,389 @@
+    body {
+      font: normal 1em Verdana, Arial, sans-serif;
+      margin: 0 7px 0 5px;
+      padding: 5px;
+    }
+    span.small {
+      font-size: 90%;
+    }
+    h1 {
+      font-size: 120%;
+      margin: 0;
+      padding: 4px 0;
+    }
+    p {
+      margin: 0;
+      padding: 2px 0;
+    }
+    div.infobox {
+      position: relative;
+      display: block;
+      background-color: #f0f6f9;
+      border: 1px solid #336699;
+      padding: 5px;
+      margin: 2px;
+    }
+    div.questionText {
+      font: normal 1em Verdana, Arial, sans-serif;
+      font-size: 120%;
+      width: 90%;
+    } 
+    div.instructionsText {
+      font: normal 1em Verdana, Arial, sans-serif;
+      font-size: 100%;
+      font-style:italic;
+    } 
+    div.questionLabel {
+      font-size: 120%;
+      text-align: right;
+      position: absolute;
+      display: block;
+      top: 0px;
+      right: 0px;
+      color: #000072;
+    }
+    img.removeClass {
+      cursor: pointer;      
+    }
+    img.verifyClassImage {
+      width: 110px;     
+      height: 110px;      
+    }
+    img.scoreImage {
+      max-width: 200px;   
+      max-height: 200px;   
+    }
+    
+    div.attributeLabel {
+      font: normal 1em Verdana, Arial, sans-serif;
+      font-size: 80%;
+    } 
+    div.attributeLabel.selected {
+      color: #007700;
+    } 
+    div.attributeTable {
+    } 
+    td.attributeCell {
+      text-align: center;      
+      background-color: #FFF;
+      margin: 0;
+      padding: 0;   
+      vertical-align: middle;      
+      border: 4px solid #FFF;
+      cursor: pointer;     
+    } 
+    td.attributeCell:hover {
+      border: 4px solid #000;
+    }
+    td.attributeCell.selected {   
+      border: 4px solid ;   
+      border-color: #009500;
+    }
+    td.attributeCell.selected:hover {
+    }
+    img.attributeImage {
+      border-width: 0px;
+      max-width: 80px;
+    } 
+    div.enlarged_image {
+      background-color: #CCC;
+      border: 4px solid #CCC;
+      cursor: pointer;
+    }
+
+    table.verificationTable {
+	margin-left: auto;
+	margin-right: auto;      
+    } 
+    table.verifyButtonsTable {
+	margin-left: auto;
+	margin-right: auto;      
+    } 
+
+    table.classesTable {
+      valign: top;
+    } 
+    td.classesImageCell {
+      text-align: center;      
+      margin: 0;
+      padding: 0;      
+      width: 70px;
+      vertical-align: middle;      
+      valign: top;
+      font: normal 1em Verdana, Arial, sans-serif;
+      font-size: 70%;
+    } 
+
+    a.debugLink {
+      cursor: pointer;     
+      color: #0000FF;
+    }
+    a.debugLink:hover {
+      cursor: pointer;     
+      color: #FF0000;
+    }
+
+    
+    /* button styles */
+    span.button {
+      display: block;
+      background-color: transparent;
+      background-image: url(images/controls/buttonBackground.gif);
+      background-repeat: no-repeat;
+      width: 112px;
+      height: 28px;
+      margin: 5px auto;
+      padding: 5px 0 0 0;
+      text-align: center;
+      font-size: 95%;
+      font-weight: bold;
+      text-decoration: none;		
+      color: #002577;
+      cursor: pointer;
+      font-family: Helvetica, Calibri, Arial, sans-serif;
+    }
+    span.buttonDis {
+      display: block;
+      background-color: transparent;
+      background-image: url(images/controls/buttonBackground.gif);
+      background-repeat: no-repeat;
+      width: 112px;
+      height: 28px;
+      margin: 5px auto;
+      padding: 5px 0 0 0;
+      text-align: center;
+      font-size: 95%;
+      font-weight: bold;
+      text-decoration: none;		
+      color: #5F5F5F;
+      cursor: default;
+      font-family: Helvetica, Calibri, Arial, sans-serif;
+      color: #5F5F5F;
+      background-position: 0 -72px;
+    }
+    span.button:hover {
+      background-position: 0 -36px;
+      color: #FF7200;
+    }
+    .icon {
+      background-repeat: no-repeat;
+      padding: 0 0 5px 18px;
+    }
+    span.button:hover .icon {
+      background-position: 0 -28px;
+    }
+    span.buttonDis .icon {
+      background-position: 0 -56px;
+    }
+    #buttonPrev .icon {
+      background-image: url(images/controls/prev_all.png);
+    }
+    #buttonNext .icon {
+      background-image: url(images/controls/next_all.png);
+    }
+    #buttonNo .icon {
+      background-image: url(images/controls/no.png);
+    }
+    #buttonYes .icon {
+      background-image: url(images/controls/yes.png);
+    }
+    #buttonUnsure .icon {
+      background-image: url(images/controls/unsure.png);
+    }
+    span.tip {
+      width: 200px;
+    }
+
+
+    #mainInstructions {
+      font-size: 100%;
+      position: absolute;
+    }
+    #imageContainer {
+      top: 50px;
+      left: 5px;
+      height: 400px;
+      width: 400px;
+      position: absolute;
+    }
+    #questionDiv {
+      position: absolute;
+      top: 50px;
+      left: 410px;
+      height: 445px;
+      width: 610px;
+      padding: 2px;
+      margin: 0 auto 1em;
+      color: #323251;
+      border: 0.2em solid #848499;
+      background-color: #F4F4FA;
+      text-align: center;
+      -moz-border-radius: 4px 4px;
+      -webkit-border-radius: 4px 4px;
+      border-bottom-left-radius: 4px 4px;
+      border-bottom-right-radius: 4px 4px;
+      border-top-left-radius: 4px 4px;
+      border-top-right-radius: 4px 4px;
+    } 
+    #classVerificationDiv {
+      position: absolute;
+      top: 50px;
+      left: 410px;
+      height: 445px;
+      width: 610px;
+      padding: 2px;
+      margin: 0 auto 1em;
+      color: #323251;
+      border: 0.2em solid #848499;
+      background-color: #F4F4FA;
+      text-align: center;
+      -moz-border-radius: 4px 4px;
+      -webkit-border-radius: 4px 4px;
+      border-bottom-left-radius: 4px 4px;
+      border-bottom-right-radius: 4px 4px;
+      border-top-left-radius: 4px 4px;
+      border-top-right-radius: 4px 4px;
+      text-align: center;
+    } 
+    #magnifyDiv {
+      background-color: #ffffff;
+    }
+    #magnifyLabel {
+      text-align: center;
+    }
+    #magnifyInstructions {
+      text-align: center;
+      color: #800000;
+    }
+    #scorePageComputation {
+	color:#0000ff;
+    }
+    #scorePageDiv {
+      position: absolute;
+      top: 50px;
+      left: 410px;
+      height: 445px;
+      width: 610px;
+      padding: 2px;
+      margin: 0 auto 1em;
+      color: #323251;
+      border: 0.2em solid #848499;
+      background-color: #F4F4FA;
+      text-align: center;
+      -moz-border-radius: 4px 4px;
+      -webkit-border-radius: 4px 4px;
+      border-bottom-left-radius: 4px 4px;
+      border-bottom-right-radius: 4px 4px;
+      border-top-left-radius: 4px 4px;
+      border-top-right-radius: 4px 4px;
+      text-align: center;
+      display: none;
+    } 
+    #classesDiv {
+      position: absolute;
+      top: 508px;
+      left: 5px;
+      width: 1019px;
+      height: 160px;
+      color: #513232;
+      border: 0.2em solid #AF9394;
+      background-color: #FEF8F8;
+      text-align: center;
+      -moz-border-radius: 4px 4px;
+      -webkit-border-radius: 4px 4px;
+      border-bottom-left-radius: 4px 4px;
+      border-bottom-right-radius: 4px 4px;
+      border-top-left-radius: 4px 4px;
+      border-top-right-radius: 4px 4px;
+    } 
+    div.classResults {
+      width: 900px;
+      height: 130px;
+      overflow: hidden;
+    }
+
+    #infoDiv {
+      position: absolute;
+      top: 710px;
+      left: 5px;
+    }
+
+    #debugDiv {
+      visibility: hidden;
+    }
+    #debugLink {
+      visibility: hidden;
+    }
+
+
+    #drop-box-overlay {
+	margin: 1px;
+	padding: 0;
+	top: 0;
+	left: 0;
+	width: 100%;
+	min-height: 100%;
+	position: fixed;
+	background-color: #222222;
+	display: none;
+	
+	z-index: 50;
+	opacity: 0.9;
+     }
+
+#drop-box-overlay h1 {
+	padding: 2em;
+	top: 38%;
+	left: 35%;
+	position: absolute;
+	
+	border: 2px solid #679B00;
+	background-color: #C9F76F;
+	-moz-border-radius: 4px 4px;
+	-webkit-border-radius: 4px 4px;
+	border-bottom-left-radius: 4px 4px;
+	border-bottom-right-radius: 4px 4px;
+	border-top-left-radius: 4px 4px;
+	border-top-right-radius: 4px 4px;
+	
+	color: #222222;
+	font-size: 150%;
+	text-shadow: 1px 1px 1px #FFFFFF;
+}
+
+#upload-box {
+        padding: 2px;
+        top: 50px;
+        left: 5px;
+        height: 445px;
+        width: 410px;
+        position: absolute;
+	margin: 0 auto 1em;
+	color: #514721;
+	border: 0.2em solid #FFD324;
+	background-color: #FEFFE8;
+	text-align: center;
+	-moz-border-radius: 4px 4px;
+	-webkit-border-radius: 4px 4px;
+	border-bottom-left-radius: 4px 4px;
+	border-bottom-right-radius: 4px 4px;
+	border-top-left-radius: 4px 4px;
+	border-top-right-radius: 4px 4px;
+	z-index: 20;
+}
+
+#upload-status-text_p {
+	font-size: 150%;
+	padding-top: 1.5em;
+	text-shadow: 1px 1px 1px #FFFFFF;
+}
+
+#upload-details {
+	color: #666666;
+	text-shadow: 1px 1px 1px #FFFFFF;
+}
+
+#upload-animation { display: none; }
+
+
+

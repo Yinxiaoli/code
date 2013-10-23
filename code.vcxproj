@@ -1,0 +1,224 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="online_structured_svm\examples\structured_svm_multiclass.cpp" />
+    <ClCompile Include="src\20q_server.cpp" />
+    <ClCompile Include="src\attribute.cpp" />
+    <ClCompile Include="src\attributeJoint.cpp" />
+    <ClCompile Include="src\class.cpp" />
+    <ClCompile Include="src\classes.cpp" />
+    <ClCompile Include="src\color.cpp" />
+    <ClCompile Include="src\dataset.cpp" />
+    <ClCompile Include="src\dt.cpp" />
+    <ClCompile Include="src\entropy.cpp" />
+    <ClCompile Include="src\feature.cpp" />
+    <ClCompile Include="src\fisher.cpp" />
+    <ClCompile Include="src\histogram.cpp" />
+    <ClCompile Include="src\hog.cpp" />
+    <ClCompile Include="src\imageProcess.cpp" />
+    <ClCompile Include="src\interactiveLabel.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\online_interactive_parts_server.cpp" />
+    <ClCompile Include="src\opencvUtil.cpp" />
+    <ClCompile Include="src\part.cpp" />
+    <ClCompile Include="src\pose.cpp" />
+    <ClCompile Include="src\question.cpp" />
+    <ClCompile Include="src\spatialModel.cpp" />
+    <ClCompile Include="src\structured_svm_class_attribute.cpp" />
+    <ClCompile Include="src\structured_svm_multi_object.cpp" />
+    <ClCompile Include="src\structured_svm_partmodel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\20q_server.h" />
+    <ClInclude Include="include\attribute.h" />
+    <ClInclude Include="include\class.h" />
+    <ClInclude Include="include\classes.h" />
+    <ClInclude Include="include\color.h" />
+    <ClInclude Include="include\dataset.h" />
+    <ClInclude Include="include\datasetIO.h" />
+    <ClInclude Include="include\distance.h" />
+    <ClInclude Include="include\entropy.h" />
+    <ClInclude Include="include\feature.h" />
+    <ClInclude Include="include\fisher.h" />
+    <ClInclude Include="include\gmm.h" />
+    <ClInclude Include="include\histogram.h" />
+    <ClInclude Include="include\hog.h" />
+    <ClInclude Include="include\imageProcess.h" />
+    <ClInclude Include="include\interactiveLabel.h" />
+    <ClInclude Include="include\kmeans.h" />
+    <ClInclude Include="include\main.h" />
+    <ClInclude Include="include\online_interactive_parts_server.h" />
+    <ClInclude Include="include\opencvUtil.h" />
+    <ClInclude Include="include\part.h" />
+    <ClInclude Include="include\pose.h" />
+    <ClInclude Include="include\question.h" />
+    <ClInclude Include="include\spatialModel.h" />
+    <ClInclude Include="include\structured_svm_class_attribute.h" />
+    <ClInclude Include="include\structured_svm_multi_object.h" />
+    <ClInclude Include="include\structured_svm_partmodel.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7E943A25-1BE4-4A58-86D8-D6E141D07DBF}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>visipedia_toolbox</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="paths.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="paths_x64.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="paths.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="paths_x64.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)\lib\</OutDir>
+    <IntDir>obj\debug_static\</IntDir>
+    <TargetName>visipediad</TargetName>
+    <TargetExt>.lib</TargetExt>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)\lib\x64</OutDir>
+    <IntDir>obj\debug_static\</IntDir>
+    <TargetName>visipediad</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <IncludePath>C:\opencv\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\opencv\build\x64\vc10\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetExt>.lib</TargetExt>
+    <OutDir>$(SolutionDir)\lib\</OutDir>
+    <IntDir>obj\release_static\</IntDir>
+    <TargetName>visipedia</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetExt>.lib</TargetExt>
+    <OutDir>$(SolutionDir)\lib\x64</OutDir>
+    <IntDir>obj\release_static\</IntDir>
+    <TargetName>visipedia</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);USE_OPENMP;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;online_structured_svm/include;online_structured_svm/json;online_structured_svm/examples;C:/OpenCV245;C:/opencv/include;C:/opencv/include/opencv;C:/opencv/modules/core/include;C:/opencv/modules/imgproc/include;C:/opencv/modules/flann/include;C:/opencv/modules/highgui/include;C:/opencv/modules/features2d/include;C:/opencv/modules/calib3d/include;C:/opencv/modules/ml/include;C:/opencv/modules/video/include;C:/opencv/modules/objdetect/include;C:/opencv/modules/contrib/include;C:/opencv/modules/photo/include;C:/opencv/modules/legacy/include;C:/opencv/modules/gpu/include;C:/opencv/modules/nonfree/include;C:/opencv/modules/stitching/include;C:/opencv/modules/superres/include;C:/opencv/modules/ts/include;C:/opencv/modules/videostab/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;online_structured_svm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);USE_OPENMP;NO_SERVER;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;online_structured_svm/include;online_structured_svm/json;online_structured_svm/examples</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;online_structured_svm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VISIPEDIA_TOOLBOX_EXPORTS;USE_OPENMP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VISIPEDIA_TOOLBOX_EXPORTS;USE_OPENMP;NO_SERVER;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;online_structured_svm/include;online_structured_svm/json;online_structured_svm/examples</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
