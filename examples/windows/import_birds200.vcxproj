@@ -79,7 +79,7 @@
     <OutDir>$(SolutionDir)\examples\bin\$(Configuration)_static\</OutDir>
     <IntDir>$(SolutionDir)\examples\obj\$(Configuration)_static\$(ProjectName)\</IntDir>
     <IncludePath>C:\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\MyResearch\2---2013Fall\Jiongxin\CalTech_Bird\code_v1.00\code\lib\x64;C:\opencv\build\x64\vc10\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\opencv\build\x64\vc10\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
