@@ -830,8 +830,8 @@ void ObjectPoseInstance::ComputeLoss(PartLocation *gt_loc, float max_loss, bool 
 	    // VOC-style loss: Assume there is a bounding box of the size of the detection window centered at
 	    // the predicted location, and another one at the ground truth location.  For every candidate
 	    // predicted pixel location, densely compute the area of intersection divided by the area of union
-		yinxiao_count++;
-		printf("the current number is %4d \n", yinxiao_count);
+		//yinxiao_count++;
+		//printf("the current number is %4d \n", yinxiao_count);
 	    Attribute *attr = pose->Appearance();
 	    FeatureWindow *templ = attr->Feature(0);
 	    float w = (float)templ->w, h = (float)templ->h;
